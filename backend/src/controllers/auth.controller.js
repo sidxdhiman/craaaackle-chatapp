@@ -28,9 +28,10 @@ export const signup = async (req, res) => {
     });
 
     if (newUser) {
-      // generate jwt token here
+      // generate jwt token first
       generateToken(newUser._id, res);
-      await newUser.save();
+      
+      await newUser.save(); // Save the new user after generating token
 
       res.status(201).json({
         _id: newUser._id,
@@ -61,6 +62,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    // Generate JWT token after password check
     generateToken(user._id, res);
 
     res.status(200).json({
@@ -94,7 +96,10 @@ export const updateProfile = async (req, res) => {
       return res.status(400).json({ message: "Profile pic is required" });
     }
 
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
+    const uploadResponse = await cloudinary.uploader.upload(profilePic, {
+      folder: "user_profiles", // Optional: Organize images in a folder
+    });
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { profilePic: uploadResponse.secure_url },
@@ -110,6 +115,9 @@ export const updateProfile = async (req, res) => {
 
 export const checkAuth = (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
     res.status(200).json(req.user);
   } catch (error) {
     console.log("Error in checkAuth controller", error.message);
